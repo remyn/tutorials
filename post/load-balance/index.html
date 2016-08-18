@@ -149,8 +149,26 @@ You can find more information on the <a href="http://traefik.io/">website</a>.</
 &quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&quot; http://$(echo $DOCKER_IP):8088 for Traefik
 </code></pre>
 
-<p>curl -H Host:whoami.docker.localhost http://$(echo $DOCKER_IP)
-=&gt; check the load balancing</p>
+<p><em>That&rsquo;s it !</em> We have a cluster running locally simulated by containers. But it will be the same principle, if you have several instances of mesos agent as full EC2 instances for examples. In our current local cluster an full EC2 instance is simulated by a agent container.</p>
+
+<h2 id="load-balancing">Load balancing</h2>
+
+<p>Inside the composition file, we also started a simple rest application, named <code>whoami</code> that just reply to a GET pushing back its local IP. It is handy to check load balancing.
+We have 2 instances (I mean - container)  of the same application.</p>
+
+<pre><code>curl -H Host:whoami.docker.localhost http://$(echo $DOCKER_IP)
+</code></pre>
+
+<p>If you execute the previous command several time, you will see that each request is handle by the 2 deployed containers alternatively.</p>
+
+<blockquote>
+<p>Notice, that we don&rsquo;t communicate directly with the container here. We simply send the request to the HOST IP address.
+Traefik will automatically redirect the request to the container that can handle the request. It balances automatically between the number of containers running.
+Traefik updates in real time the configuration. No need to stop the service, update the configuration file and restart it when you scale the containers up or down.
+Just start more or stop containers and Traefik will automatically notice the difference.</p>
+</blockquote>
+
+<h2 id="creating-our-own-asp-net-core-container">Creating our own asp.net core container</h2>
 
 <p>Put the docker file into the project folder
 Move to the project folder
@@ -165,8 +183,9 @@ curl -X POST -i -H &ldquo;Content-Type: application/json&rdquo; -d &ldquo;{ &lsq
 So using dynamic routing
 curl -X POST -i -H &ldquo;Content-Type: application/json&rdquo; -H &ldquo;Host:payrun_1.docker.localhost&rdquo; -d &ldquo;{ &lsquo;Name&rsquo;:&lsquo;Payrun name&rsquo;, &lsquo;Schedule&rsquo;: &lsquo;Schedule name&rsquo; }&rdquo; http://$(echo $DOCKER_IP):80/payruns</p>
 
-<p>Scale
-Deploy payrun marathon
+<h2 id="scale-our-container">Scale our container</h2>
+
+<p>Deploy payrun marathon
 Manually or by script
 curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H &ldquo;Content-type: application/json&rdquo;</p>
 
@@ -210,6 +229,9 @@ curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H 
 <ul>
 <li><a href="#create-the-cluster">Create the cluster</a></li>
 <li><a href="#mesos-marathon-traefik">Mesos, Marathon, Traefik</a></li>
+<li><a href="#load-balancing">Load balancing</a></li>
+<li><a href="#creating-our-own-asp-net-core-container">Creating our own asp.net core container</a></li>
+<li><a href="#scale-our-container">Scale our container</a></li>
 </ul></li>
 </ul>
 </nav></div>

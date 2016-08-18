@@ -84,8 +84,26 @@ You can find more information on the &lt;a href=&#34;http://traefik.io/&#34;&gt;
 &amp;quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&amp;quot; http://$(echo $DOCKER_IP):8088 for Traefik
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;curl -H Host:whoami.docker.localhost http://$(echo $DOCKER_IP)
-=&amp;gt; check the load balancing&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;That&amp;rsquo;s it !&lt;/em&gt; We have a cluster running locally simulated by containers. But it will be the same principle, if you have several instances of mesos agent as full EC2 instances for examples. In our current local cluster an full EC2 instance is simulated by a agent container.&lt;/p&gt;
+
+&lt;h2 id=&#34;load-balancing&#34;&gt;Load balancing&lt;/h2&gt;
+
+&lt;p&gt;Inside the composition file, we also started a simple rest application, named &lt;code&gt;whoami&lt;/code&gt; that just reply to a GET pushing back its local IP. It is handy to check load balancing.
+We have 2 instances (I mean - container)  of the same application.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -H Host:whoami.docker.localhost http://$(echo $DOCKER_IP)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;If you execute the previous command several time, you will see that each request is handle by the 2 deployed containers alternatively.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Notice, that we don&amp;rsquo;t communicate directly with the container here. We simply send the request to the HOST IP address.
+Traefik will automatically redirect the request to the container that can handle the request. It balances automatically between the number of containers running.
+Traefik updates in real time the configuration. No need to stop the service, update the configuration file and restart it when you scale the containers up or down.
+Just start more or stop containers and Traefik will automatically notice the difference.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;creating-our-own-asp-net-core-container&#34;&gt;Creating our own asp.net core container&lt;/h2&gt;
 
 &lt;p&gt;Put the docker file into the project folder
 Move to the project folder
@@ -100,8 +118,9 @@ curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -d &amp;
 So using dynamic routing
 curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -H &amp;ldquo;Host:payrun_1.docker.localhost&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):80/payruns&lt;/p&gt;
 
-&lt;p&gt;Scale
-Deploy payrun marathon
+&lt;h2 id=&#34;scale-our-container&#34;&gt;Scale our container&lt;/h2&gt;
+
+&lt;p&gt;Deploy payrun marathon
 Manually or by script
 curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H &amp;ldquo;Content-type: application/json&amp;rdquo;&lt;/p&gt;
 
@@ -156,7 +175,7 @@ You can used the scripts &lt;a href=&#34;https://github.com/remyn/tutorials-file
 
 &lt;p&gt;Great, so by now you should have the tools into the folder docker-demo.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;https://remyn.github.io/tutorials/static/images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
 
 &lt;h2 id=&#34;create-the-virtual-machine&#34;&gt;Create the virtual machine&lt;/h2&gt;
 

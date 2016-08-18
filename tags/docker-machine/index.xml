@@ -51,7 +51,7 @@ You can used the scripts &lt;a href=&#34;https://github.com/remyn/tutorials-file
 
 &lt;p&gt;Great, so by now you should have the tools into the folder docker-demo.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;https://remyn.github.io/tutorials/static/images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
 
 &lt;h2 id=&#34;create-the-virtual-machine&#34;&gt;Create the virtual machine&lt;/h2&gt;
 
