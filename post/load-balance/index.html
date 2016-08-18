@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="generator" content="Hugo 0.16" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <link rel='stylesheet' href='//fonts.googleapis.com/css?family=Noticia+Text:400,700|Marcellus+SC'>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/solarized_dark.min.css">
+    <link rel="stylesheet" href="http://remyn.github.io/tutorialscss/styles.css">
+    <link rel="stylesheet" href="http://remyn.github.io/tutorialscss/custom.css">
+    <link rel="alternate" type="application/rss+xml" title="RSS" href="http://remyn.github.io/tutorialsindex.xml">
+
+    
+    <title>Load balance containers - One step at a time ...</title>
+    <meta property='og:title' content="Load balance containers - One step at a time ...">
+    <meta property="og:type" content="article">
+    
+
+    <meta property="og:url" content="http://remyn.github.io/tutorials/post/load-balance/">
+    <meta name="description" content="A simple way to load balance containers inside a cluster.">
+    <meta property="og:image" content="http://remyn.github.io/tutorialsimages/docker-mesos-marathon.png">
+
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "BlogPosting",
+    "mainEntityOfPage":{
+      "@type":"WebPage",
+      "@id":"http:\/\/remyn.github.io\/tutorials"
+    },
+    "headline": "Load balance containers |  ",
+    "image": {
+      "@type": "ImageObject",
+      "url": "",
+      "height": 700,
+      "width": 700
+    },
+    "datePublished": "2016-08-18T14:30:58JST",
+    "dateModified": "2016-08-18T14:30:58JST",
+    "author": {
+      "@type": "Person",
+      "name": "",
+      "image": "http:\/\/remyn.github.io\/tutorialsimages/logo.png"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "http:\/\/remyn.github.io\/tutorialsimages/logo.png",
+        "height": 60,
+        "width": 60
+      }
+    },
+    "description": "A simple way to load balance containers inside a cluster."
+  }
+</script>
+</head>
+
+<body>
+
+  <header class="l-header">
+      <img class="logo" src="http://remyn.github.io/tutorialsimages/remyn-hexa.png"/>
+    <div class="p-logo">
+      <a href="http://remyn.github.io/tutorials">One step at a time ...</a>
+    </div>
+  </header>
+
+
+
+<div class="container">
+
+  <div class="row">
+    <div class="col-md-9">
+
+      <article class="single">
+        <div class="image" style="background-image: url(http://remyn.github.io/tutorialsimages/docker-mesos-marathon.png);"></div>
+        <div class="body">
+          <h1>Load balance containers</h1>
+          
+
+<p>A simple way to load balance containers inside a cluster.</p>
+
+<p>First start or setup a virtual machine that will act as our cluster. If necessary, refer to <a href="/tutorials/post/docker-start/">Docker start</a>.</p>
+
+<p>In the following, we will use the virtual machine created  before named <code>docker-host</code>.</p>
+
+<h2 id="create-the-cluster">Create the cluster</h2>
+
+<p>We are going to create another environment variable containing the IP address of our virtual machine.</p>
+
+<p>It will be useful for our cluster creation. For that purpose, we use docker-machine to tell us what is the IP address:</p>
+
+<pre><code>export DOCKER_IP=$(docker-machine ip docker-host)
+</code></pre>
+
+<p>Now, we just need to create the cluster with <code>docker-compose</code>.</p>
+
+<p>If you didn&rsquo;t get the <a href="https://github.com/remyn/tutorials-files">repository</a>, you can download directly the composition file <a href="https://github.com/remyn/tutorials-files/raw/master/compose-cluster.yml">compose-cluster.yml</a>.</p>
+
+<pre><code>docker-compose -f compose-cluster.yml up -d
+</code></pre>
+
+<p>The composition file instruct docker to setup the following:</p>
+
+<ul>
+<li>1 x Zookeeper</li>
+<li>1 x Mesos server</li>
+<li>1 x Mesos agent</li>
+<li>1 x Marathon</li>
+<li>1 x Traefik</li>
+</ul>
+
+<p>The first time, it will be a little longer because it needs to pull the container images from the public repository of docker.</p>
+
+<p>list the containers</p>
+
+<pre><code>docker ps
+</code></pre>
+
+<p>You can also check the logs of the containers to be sure, everything has been set up properly:</p>
+
+<pre><code>docker logs docker_demo_zk_1
+docker logs docker_demo_master_1
+docker logs docker_demo_slave_1
+docker logs docker_marathon_1
+docker logs docker_demo_traefik_1
+</code></pre>
+
+<h2 id="mesos-marathon-traefik">Mesos, Marathon, Traefik</h2>
+
+<p>Mesos manage your computing resources - typically cpu, ram. Every agent reports the resources available.
+You can have more details at the <a href="http://mesos.apache.org/">mesos website</a>.</p>
+
+<p>Marathon will schedule the containers against the resources.
+You can have more details at the <a href="https://mesosphere.github.io/marathon/">marathon website</a>.</p>
+
+<p>Traefik is a dynamic reverse proxy. It will redirect the HTTP traffic to the appropriate container. It will act as a load balancer.
+You can find more information on the <a href="http://traefik.io/">website</a>.</p>
+
+<p>Now there are all up and running you can check there web interfaces:</p>
+
+<pre><code>&quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&quot; http://$(echo $DOCKER_IP):5050 for Mesos
+&quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&quot; http://$(echo $DOCKER_IP):8080 for Marathon
+&quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&quot; http://$(echo $DOCKER_IP):8088 for Traefik
+</code></pre>
+
+<p>curl -H Host:whoami.docker.localhost http://$(echo $DOCKER_IP)
+=&gt; check the load balancing</p>
+
+<p>Put the docker file into the project folder
+Move to the project folder
+docker build -t payrun .</p>
+
+<p>docker run -t -d &ndash;name payrun_1 -p 5000:5000 payrun</p>
+
+<p>Direct call
+curl -X POST -i -H &ldquo;Content-Type: application/json&rdquo; -d &ldquo;{ &lsquo;Name&rsquo;:&lsquo;Payrun name&rsquo;, &lsquo;Schedule&rsquo;: &lsquo;Schedule name&rsquo; }&rdquo; http://$(echo $DOCKER_IP):5000/payruns</p>
+
+<p>Check Traefik to see the new container registered
+So using dynamic routing
+curl -X POST -i -H &ldquo;Content-Type: application/json&rdquo; -H &ldquo;Host:payrun_1.docker.localhost&rdquo; -d &ldquo;{ &lsquo;Name&rsquo;:&lsquo;Payrun name&rsquo;, &lsquo;Schedule&rsquo;: &lsquo;Schedule name&rsquo; }&rdquo; http://$(echo $DOCKER_IP):80/payruns</p>
+
+<p>Scale
+Deploy payrun marathon
+Manually or by script
+curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H &ldquo;Content-type: application/json&rdquo;</p>
+
+<p>curl -X POST -i -H &ldquo;Content-Type: application/json&rdquo; -H &ldquo;Host:payrun.marathon&rdquo; -d &ldquo;{ &lsquo;Name&rsquo;:&lsquo;Payrun name&rsquo;, &lsquo;Schedule&rsquo;: &lsquo;Schedule name&rsquo; }&rdquo; http://$(echo $DOCKER_IP):80/payruns</p>
+
+<p>Scale the application manually (could be done by script)</p>
+
+<p>docker stats</p>
+
+        </div>
+
+        <aside>
+          <section>
+            <div>
+              <div class="p-share">
+                <a href="http://www.facebook.com/sharer.php?src=bm&u=http%3a%2f%2fremyn.github.io%2ftutorials%2fpost%2fload-balance%2f&t=Load%20balance%20containers" onclick="window.open(this.href, 'PCwindow', 'width=550, height=350, menubar=no, toolbar=no, scrollbars=yes'); return false;"><i class="fa fa-facebook"></i></a>
+                <a href="http://twitter.com/intent/tweet?url=http%3a%2f%2fremyn.github.io%2ftutorials%2fpost%2fload-balance%2f&text=Load%20balance%20containers&tw_p=tweetbutton" onclick="window.open(this.href, 'PCwindow', 'width=550, height=350, menubar=no, toolbar=no, scrollbars=yes'); return false;"><i class="fa fa-twitter"></i></a>
+                <a href="https://plus.google.com/share?url=http%3a%2f%2fremyn.github.io%2ftutorials%2fpost%2fload-balance%2f" onclick="window.open(this.href, 'PCwindow', 'width=550, height=350, menubar=no, toolbar=no, scrollbars=yes'); return false;"><i class="fa fa-google-plus"></i></a>
+                <a href="http://getpocket.com/edit?url=http%3a%2f%2fremyn.github.io%2ftutorials%2fpost%2fload-balance%2f&title=Load%20balance%20containers" onclick="window.open(this.href, 'PCwindow', 'width=550, height=350, menubar=no, toolbar=no, scrollbars=yes'); return false;"><i class="fa fa-get-pocket"></i></a>
+              </div>
+            </div>
+          </section>
+
+          
+          
+          
+        </aside>
+
+      </article>
+
+    </div>
+    <div class="col-md-3">
+      <aside class="site">
+
+  
+  <section>
+    <header>Table Of Contents</header>
+    <div><nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#create-the-cluster">Create the cluster</a></li>
+<li><a href="#mesos-marathon-traefik">Mesos, Marathon, Traefik</a></li>
+</ul></li>
+</ul>
+</nav></div>
+  </section>
+  
+
+  
+  <section>
+    <header>Menu</header>
+    <div>
+      <nav class="p-menu">
+        
+        <ul>
+          
+          <li>
+            
+          <li><a href="/tutorials/post/load-balance/"> Load balance containers</a></li>
+          
+          
+          <li>
+            
+          <li><a href="/tutorials/post/docker-start/"> Starting with docker</a></li>
+          
+          
+        </ul>
+        
+      </nav>
+    </div>
+  </section>
+  
+
+  <section>
+    <header>LatestPosts</header>
+    <div>
+      
+      <article class="li">
+  <a href="http://remyn.github.io/tutorials/post/load-balance/" class="clearfix">
+    <div class="image" style="background-image: url(http://remyn.github.io/tutorialsimages/docker-mesos-marathon.png);"></div>
+    <footer>
+      <div class="date">
+        <time>Thu, Aug 18, 2016</time>
+      </div>
+      <h2 class="title">Load balance containers</h2>
+    </footer>
+  </a>
+</article>
+
+      
+      <article class="li">
+  <a href="http://remyn.github.io/tutorials/post/docker-start/" class="clearfix">
+    <div class="image" style="background-image: url(http://remyn.github.io/tutorialsimages/docker-machine.png);"></div>
+    <footer>
+      <div class="date">
+        <time>Tue, Aug 16, 2016</time>
+      </div>
+      <h2 class="title">Starting with docker</h2>
+    </footer>
+  </a>
+</article>
+
+      
+    </div>
+  </section>
+
+  
+  <section>
+    <header>category</header>
+    <div>
+      <ul>
+        
+      </ul>
+    </div>
+  </section>
+  
+  <section>
+    <header>tag</header>
+    <div>
+      <ul>
+        <li><a href="http://remyn.github.io/tutorialstags/docker">docker</a></li><li><a href="http://remyn.github.io/tutorialstags/docker-compose">docker-compose</a></li><li><a href="http://remyn.github.io/tutorialstags/docker-machine">docker-machine</a></li><li><a href="http://remyn.github.io/tutorialstags/marathon">marathon</a></li><li><a href="http://remyn.github.io/tutorialstags/mesos">mesos</a></li><li><a href="http://remyn.github.io/tutorialstags/traefik">traefik</a></li>
+      </ul>
+    </div>
+  </section>
+  
+
+</aside>
+
+    </div>
+  </div>
+</div>
+
+
+<footer class="l-footer">
+  <p>&copy; 2016 remyn</p>
+</footer>
+
+<script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+
+  </body>
+</html>
+

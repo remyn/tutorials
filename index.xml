@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>One step at a time ... </title>
+    <link>http://remyn.github.io/tutorials/</link>
+    <language>en-us</language>
+    <author>remyn</author>
+    <rights>(C) 2016</rights>
+    <updated>2016-08-18 14:30:58 &#43;1200 NZST</updated>
+
+    
+      
+        <item>
+          <title>Load balance containers</title>
+          <link>http://remyn.github.io/tutorials/post/load-balance/</link>
+          <pubDate>Thu, 18 Aug 2016 14:30:58 NZST</pubDate>
+          <author>remyn</author>
+          <guid>http://remyn.github.io/tutorials/post/load-balance/</guid>
+          <description>
+
+&lt;p&gt;A simple way to load balance containers inside a cluster.&lt;/p&gt;
+
+&lt;p&gt;First start or setup a virtual machine that will act as our cluster. If necessary, refer to &lt;a href=&#34;http://remyn.github.io/tutorials/tutorials/post/docker-start/&#34;&gt;Docker start&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;In the following, we will use the virtual machine created  before named &lt;code&gt;docker-host&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;create-the-cluster&#34;&gt;Create the cluster&lt;/h2&gt;
+
+&lt;p&gt;We are going to create another environment variable containing the IP address of our virtual machine.&lt;/p&gt;
+
+&lt;p&gt;It will be useful for our cluster creation. For that purpose, we use docker-machine to tell us what is the IP address:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;export DOCKER_IP=$(docker-machine ip docker-host)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now, we just need to create the cluster with &lt;code&gt;docker-compose&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you didn&amp;rsquo;t get the &lt;a href=&#34;https://github.com/remyn/tutorials-files&#34;&gt;repository&lt;/a&gt;, you can download directly the composition file &lt;a href=&#34;https://github.com/remyn/tutorials-files/raw/master/compose-cluster.yml&#34;&gt;compose-cluster.yml&lt;/a&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-compose -f compose-cluster.yml up -d
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The composition file instruct docker to setup the following:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;1 x Zookeeper&lt;/li&gt;
+&lt;li&gt;1 x Mesos server&lt;/li&gt;
+&lt;li&gt;1 x Mesos agent&lt;/li&gt;
+&lt;li&gt;1 x Marathon&lt;/li&gt;
+&lt;li&gt;1 x Traefik&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The first time, it will be a little longer because it needs to pull the container images from the public repository of docker.&lt;/p&gt;
+
+&lt;p&gt;list the containers&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker ps
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can also check the logs of the containers to be sure, everything has been set up properly:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker logs docker_demo_zk_1
+docker logs docker_demo_master_1
+docker logs docker_demo_slave_1
+docker logs docker_marathon_1
+docker logs docker_demo_traefik_1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;mesos-marathon-traefik&#34;&gt;Mesos, Marathon, Traefik&lt;/h2&gt;
+
+&lt;p&gt;Mesos manage your computing resources - typically cpu, ram. Every agent reports the resources available.
+You can have more details at the &lt;a href=&#34;http://mesos.apache.org/&#34;&gt;mesos website&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Marathon will schedule the containers against the resources.
+You can have more details at the &lt;a href=&#34;https://mesosphere.github.io/marathon/&#34;&gt;marathon website&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Traefik is a dynamic reverse proxy. It will redirect the HTTP traffic to the appropriate container. It will act as a load balancer.
+You can find more information on the &lt;a href=&#34;http://traefik.io/&#34;&gt;website&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Now there are all up and running you can check there web interfaces:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;&amp;quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&amp;quot; http://$(echo $DOCKER_IP):5050 for Mesos
+&amp;quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&amp;quot; http://$(echo $DOCKER_IP):8080 for Marathon
+&amp;quot;C:\Program Files (x86)\Mozilla Firefox\firefox.exe&amp;quot; http://$(echo $DOCKER_IP):8088 for Traefik
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;curl -H Host:whoami.docker.localhost http://$(echo $DOCKER_IP)
+=&amp;gt; check the load balancing&lt;/p&gt;
+
+&lt;p&gt;Put the docker file into the project folder
+Move to the project folder
+docker build -t payrun .&lt;/p&gt;
+
+&lt;p&gt;docker run -t -d &amp;ndash;name payrun_1 -p 5000:5000 payrun&lt;/p&gt;
+
+&lt;p&gt;Direct call
+curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):5000/payruns&lt;/p&gt;
+
+&lt;p&gt;Check Traefik to see the new container registered
+So using dynamic routing
+curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -H &amp;ldquo;Host:payrun_1.docker.localhost&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):80/payruns&lt;/p&gt;
+
+&lt;p&gt;Scale
+Deploy payrun marathon
+Manually or by script
+curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H &amp;ldquo;Content-type: application/json&amp;rdquo;&lt;/p&gt;
+
+&lt;p&gt;curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -H &amp;ldquo;Host:payrun.marathon&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):80/payruns&lt;/p&gt;
+
+&lt;p&gt;Scale the application manually (could be done by script)&lt;/p&gt;
+
+&lt;p&gt;docker stats&lt;/p&gt;
+</description>
+        </item>
+      
+    
+      
+        <item>
+          <title>Starting with docker</title>
+          <link>http://remyn.github.io/tutorials/post/docker-start/</link>
+          <pubDate>Tue, 16 Aug 2016 11:32:49 NZST</pubDate>
+          <author>remyn</author>
+          <guid>http://remyn.github.io/tutorials/post/docker-start/</guid>
+          <description>
+
+&lt;p&gt;docker-machine : a simple tool to manage our virtual machines hosting our containers.&lt;/p&gt;
+
+&lt;h1 id=&#34;docker&#34;&gt;Docker&lt;/h1&gt;
+
+&lt;p&gt;For the unlucky user that doesn&amp;rsquo;t have Windows 10, we can&amp;rsquo;t have a native docker daemon. Instead, we are going to use docker from a linux box.
+Here we are going to create a virtual machine with a lightweigth linux set up with a docker daemon.&lt;/p&gt;
+
+&lt;p&gt;All the following command should be enter inside a &lt;code&gt;git-bash&lt;/code&gt; command line tool. If you have installed Git support for your VS2015 it should be installed.
+Just start one instance as administrator and then go to your home folder:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;cd $HOME
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can get the file used in this tutorial by cloning the repository &lt;a href=&#34;https://github.com/remyn/tutorials-files&#34;&gt;&lt;code&gt;tutorials&lt;/code&gt;&lt;/a&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;git clone https://github.com/remyn/tutorials-files
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;get-the-tools&#34;&gt;Get the tools&lt;/h2&gt;
+
+&lt;p&gt;First thing, we will need to load the 2 docker tools : &lt;code&gt;docker-machine&lt;/code&gt; and &lt;code&gt;docker-compose&lt;/code&gt;.
+You can used the scripts &lt;a href=&#34;https://github.com/remyn/tutorials-files/raw/master/get-docker-machine.sh&#34;&gt;get-docker-machine.sh&lt;/a&gt; and &lt;a href=&#34;https://github.com/remyn/tutorials-files/raw/master/get-docker-compose.sh&#34;&gt;get-docker-compose.sh&lt;/a&gt; to download them into a given folder (e.g. &lt;strong&gt;docker-demo&lt;/strong&gt;).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;./tutorials/get-docker-machine.sh docker-demo
+./tutorials/get-docker-compose.sh docker-demo
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Note: If no folder is passed the default &lt;code&gt;docker-bin&lt;/code&gt; is used.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Great, so by now you should have the tools into the folder docker-demo.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;http://remyn.github.io/tutorials/static/images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&#34;create-the-virtual-machine&#34;&gt;Create the virtual machine&lt;/h2&gt;
+
+&lt;p&gt;Let&amp;rsquo;s create a virtual machine with docker on it !
+Here we are going to use HyperV but the same could be acheived with the VirtualBox driver. Use the one that you have already installed on your computer.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Note: It is one or the other, because once activated HyperV from your Windows features, VirtualBox can&amp;rsquo;t function anymore!&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;pre&gt;&lt;code&gt;cd docker-demo
+docker-machine create --driver hyperv docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;With HyperV, if you prefer using a specific network interface (e.g. WIFI), you can indicate a virtual-switch with the &amp;ndash;hyperv-virtual-switch parameter:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine create --driver hyperv --hyperv-virtual-switch &amp;quot;External LAN&amp;quot; docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;em&gt;That&amp;rsquo;s it !&lt;/em&gt; The virtual machine has been setup with a lightweight linux footprint. The latest docker daemon has been set up and it is running.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;List&lt;/strong&gt; the virtual machine:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine ls
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Stop&lt;/strong&gt; the virtual machine:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine stop docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Start&lt;/strong&gt; the virtual machine&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine start docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Remove&lt;/strong&gt; (delete) the virtual-machine:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine rm docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Here we can see that a simple executable suffice to manage the virtual machine. You can use another graphic tool to manage your virtual machine and push container into: &lt;a href=&#34;https://kitematic.com/&#34;&gt;https://kitematic.com/&lt;/a&gt; .&lt;/p&gt;
+
+&lt;h2 id=&#34;remote-control-the-virtual-machine&#34;&gt;Remote control the virtual machine&lt;/h2&gt;
+
+&lt;p&gt;To remote login into the virtual machine, we need to set up the environment variable that docker will use to communicate with the daemon (IP, port &amp;hellip;):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine env docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The previous command do just a print of the export command to create the environment variables. So to really create them, just execute the command by copying the last line printed:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;eval $(&amp;quot;C:\Users\remyn\bin\docker-machine.exe&amp;quot; env docker-host)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Remote login&lt;/strong&gt; with the virtual machine:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine ssh docker-host
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;windows-docker-client&#34;&gt;Windows docker client&lt;/h2&gt;
+
+&lt;p&gt;While we can&amp;rsquo;t have a native docker daemon on windows (8.1 and before), we can have a client one to natively send command to a docker daemon into a linux machine.&lt;/p&gt;
+
+&lt;p&gt;From an administartor console, simply install first &lt;a href=&#34;http://chocolatey.org&#34;&gt;Chocolatey&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Then to install the client docker, just type:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;choco install docker
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Then, you can simply communicate with teh docker daemon of your previous virtual machine:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker ps
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+        </item>
+      
+    
+
+  </channel>
+</rss>
