@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>One step at a time ... </title>
-    <link>http://remyn.github.io/tutorials/tags/mesos/</link>
+    <link>https://remyn.github.io/tutorials/tags/mesos/</link>
     <language>en-us</language>
     <author>remyn</author>
     <rights>(C) 2016</rights>
@@ -12,15 +12,15 @@
       
         <item>
           <title>Load balance containers</title>
-          <link>http://remyn.github.io/tutorials/post/load-balance/</link>
+          <link>https://remyn.github.io/tutorials/post/load-balance/</link>
           <pubDate>Thu, 18 Aug 2016 14:30:58 NZST</pubDate>
           <author>remyn</author>
-          <guid>http://remyn.github.io/tutorials/post/load-balance/</guid>
+          <guid>https://remyn.github.io/tutorials/post/load-balance/</guid>
           <description>
 
 &lt;p&gt;A simple way to load balance containers inside a cluster.&lt;/p&gt;
 
-&lt;p&gt;First start or setup a virtual machine that will act as our cluster. If necessary, refer to &lt;a href=&#34;http://remyn.github.io/tutorials/tutorials/post/docker-start/&#34;&gt;Docker start&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;First start or setup a virtual machine that will act as our cluster. If necessary, refer to &lt;a href=&#34;https://remyn.github.io/tutorials/tutorials/post/docker-start/&#34;&gt;Docker start&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;In the following, we will use the virtual machine created  before named &lt;code&gt;docker-host&lt;/code&gt;.&lt;/p&gt;
 

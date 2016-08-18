@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>One step at a time ... </title>
-    <link>http://remyn.github.io/tutorials/tags/docker-machine/</link>
+    <link>https://remyn.github.io/tutorials/tags/docker-machine/</link>
     <language>en-us</language>
     <author>remyn</author>
     <rights>(C) 2016</rights>
@@ -12,10 +12,10 @@
       
         <item>
           <title>Starting with docker</title>
-          <link>http://remyn.github.io/tutorials/post/docker-start/</link>
+          <link>https://remyn.github.io/tutorials/post/docker-start/</link>
           <pubDate>Tue, 16 Aug 2016 11:32:49 NZST</pubDate>
           <author>remyn</author>
-          <guid>http://remyn.github.io/tutorials/post/docker-start/</guid>
+          <guid>https://remyn.github.io/tutorials/post/docker-start/</guid>
           <description>
 
 &lt;p&gt;docker-machine : a simple tool to manage our virtual machines hosting our containers.&lt;/p&gt;
@@ -51,7 +51,7 @@ You can used the scripts &lt;a href=&#34;https://github.com/remyn/tutorials-file
 
 &lt;p&gt;Great, so by now you should have the tools into the folder docker-demo.&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://remyn.github.io/tutorials/static/images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://remyn.github.io/tutorials/static/images/docker-exe-folder.png&#34; alt=&#34;docker-exe-in-folder&#34; title=&#34;docker exe in folder.&#34; /&gt;&lt;/p&gt;
 
 &lt;h2 id=&#34;create-the-virtual-machine&#34;&gt;Create the virtual machine&lt;/h2&gt;
 
