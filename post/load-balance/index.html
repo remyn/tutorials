@@ -170,11 +170,42 @@ Just start more or stop containers and Traefik will automatically notice the dif
 
 <h2 id="creating-our-own-asp-net-core-container">Creating our own asp.net core container</h2>
 
+<p>It is easy to use some already created container. What about creating our own one.</p>
+
+<p><em>Let&rsquo;s do it!</em>
+For the purpose of this exercise, we are going to create a simple ASP.NET core (WEBAPI) that will take a json payload on a POST - just to have more fun - and reply back with the IP address of the host. Once again it is handy to test load balancing.</p>
+
+<h3 id="return-the-ip-address-of-the-container">Return the IP Address of the container</h3>
+
+<p>You can get the solution of the <a href="https://remyn.github.com/tutorials-files/payrun">project</a>. Or alternatively, just create your own ASP.NET Core and in one of of your controller insert the IP address:</p>
+
+<pre><code>var request = UriHelper.GetEncodedUrl(HttpContext.Request);
+HttpContext.Response.Headers.Add(&quot;From HOST&quot;, GetIP());
+
+private string GetIP()
+{
+    return String.Join(&quot;,&quot;, NetworkInterface.GetAllNetworkInterfaces()
+                 .SelectMany(i =&gt; i.GetIPProperties().UnicastAddresses)
+                 .Select(i =&gt; i.Address)
+                 .Where(i =&gt; i.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &amp;&amp; !IPAddress.IsLoopback(i))
+                 .Select(i =&gt; i.ToString()));
+}
+</code></pre>
+
+<p>So now we have an application that is able to handle some HTTP Request and reply back adding the IP Address of the hsot into the header.
+We can debug it, run it on our windows computer.</p>
+
+<h3 id="create-the-container">Create the container</h3>
+
 <p>Put the docker file into the project folder
 Move to the project folder
 docker build -t payrun .</p>
 
+<h3 id="deploy-the-container">Deploy the container</h3>
+
 <p>docker run -t -d &ndash;name payrun_1 -p 5000:5000 payrun</p>
+
+<h3 id="test-our-application">Test our application</h3>
 
 <p>Direct call
 curl -X POST -i -H &ldquo;Content-Type: application/json&rdquo; -d &ldquo;{ &lsquo;Name&rsquo;:&lsquo;Payrun name&rsquo;, &lsquo;Schedule&rsquo;: &lsquo;Schedule name&rsquo; }&rdquo; http://$(echo $DOCKER_IP):5000/payruns</p>
@@ -230,7 +261,13 @@ curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H 
 <li><a href="#create-the-cluster">Create the cluster</a></li>
 <li><a href="#mesos-marathon-traefik">Mesos, Marathon, Traefik</a></li>
 <li><a href="#load-balancing">Load balancing</a></li>
-<li><a href="#creating-our-own-asp-net-core-container">Creating our own asp.net core container</a></li>
+<li><a href="#creating-our-own-asp-net-core-container">Creating our own asp.net core container</a>
+<ul>
+<li><a href="#return-the-ip-address-of-the-container">Return the IP Address of the container</a></li>
+<li><a href="#create-the-container">Create the container</a></li>
+<li><a href="#deploy-the-container">Deploy the container</a></li>
+<li><a href="#test-our-application">Test our application</a></li>
+</ul></li>
 <li><a href="#scale-our-container">Scale our container</a></li>
 </ul></li>
 </ul>

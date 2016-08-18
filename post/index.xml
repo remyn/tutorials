@@ -105,11 +105,42 @@ Just start more or stop containers and Traefik will automatically notice the dif
 
 &lt;h2 id=&#34;creating-our-own-asp-net-core-container&#34;&gt;Creating our own asp.net core container&lt;/h2&gt;
 
+&lt;p&gt;It is easy to use some already created container. What about creating our own one.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Let&amp;rsquo;s do it!&lt;/em&gt;
+For the purpose of this exercise, we are going to create a simple ASP.NET core (WEBAPI) that will take a json payload on a POST - just to have more fun - and reply back with the IP address of the host. Once again it is handy to test load balancing.&lt;/p&gt;
+
+&lt;h3 id=&#34;return-the-ip-address-of-the-container&#34;&gt;Return the IP Address of the container&lt;/h3&gt;
+
+&lt;p&gt;You can get the solution of the &lt;a href=&#34;https://remyn.github.com/tutorials-files/payrun&#34;&gt;project&lt;/a&gt;. Or alternatively, just create your own ASP.NET Core and in one of of your controller insert the IP address:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;var request = UriHelper.GetEncodedUrl(HttpContext.Request);
+HttpContext.Response.Headers.Add(&amp;quot;From HOST&amp;quot;, GetIP());
+
+private string GetIP()
+{
+    return String.Join(&amp;quot;,&amp;quot;, NetworkInterface.GetAllNetworkInterfaces()
+                 .SelectMany(i =&amp;gt; i.GetIPProperties().UnicastAddresses)
+                 .Select(i =&amp;gt; i.Address)
+                 .Where(i =&amp;gt; i.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork &amp;amp;&amp;amp; !IPAddress.IsLoopback(i))
+                 .Select(i =&amp;gt; i.ToString()));
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So now we have an application that is able to handle some HTTP Request and reply back adding the IP Address of the hsot into the header.
+We can debug it, run it on our windows computer.&lt;/p&gt;
+
+&lt;h3 id=&#34;create-the-container&#34;&gt;Create the container&lt;/h3&gt;
+
 &lt;p&gt;Put the docker file into the project folder
 Move to the project folder
 docker build -t payrun .&lt;/p&gt;
 
+&lt;h3 id=&#34;deploy-the-container&#34;&gt;Deploy the container&lt;/h3&gt;
+
 &lt;p&gt;docker run -t -d &amp;ndash;name payrun_1 -p 5000:5000 payrun&lt;/p&gt;
+
+&lt;h3 id=&#34;test-our-application&#34;&gt;Test our application&lt;/h3&gt;
 
 &lt;p&gt;Direct call
 curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):5000/payruns&lt;/p&gt;
