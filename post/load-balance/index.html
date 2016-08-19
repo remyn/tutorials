@@ -87,7 +87,7 @@
 
 <p>First start or setup a virtual machine that will act as our cluster. If necessary, refer to <a href="/tutorials/post/docker-start/">Docker start</a>.</p>
 
-<p>In the following, we will use the virtual machine created  before named <code>docker-host</code>.</p>
+<p>In the following, we will use the virtual machine created before named <code>docker-host</code>. And we assume, you have set up the environment variable to connect to the docker daemon of the virtual machine.</p>
 
 <h2 id="create-the-cluster">Create the cluster</h2>
 
@@ -192,18 +192,72 @@ private string GetIP()
 }
 </code></pre>
 
-<p>So now we have an application that is able to handle some HTTP Request and reply back adding the IP Address of the hsot into the header.
+<p>So now we have an application that is able to handle some HTTP Request and reply back adding the IP Address of the host into the header.
 We can debug it, run it on our windows computer.</p>
 
 <h3 id="create-the-container">Create the container</h3>
 
-<p>Put the docker file into the project folder
-Move to the project folder
-docker build -t payrun .</p>
+<p>Here, we have an ASP.NET Core application. I mean it is a cross platform application that can be self hosted (using kestrel). It can be executed on Windows or Linux.
+We can create an container that we can deploy either on Windows or on Linux. It is a deployment choice not a compilation one.</p>
+
+<p><em>So let&rsquo;s create the container.</em></p>
+
+<p>First, if it is not already the case, put a dockerfile - named dockerfile without extension - into the project folder, that looks like the following:</p>
+
+<pre><code>FROM microsoft/dotnet:latest
+COPY . /app
+WORKDIR /app
+RUN [&quot;dotnet&quot;, &quot;restore&quot;]
+RUN [&quot;dotnet&quot;, &quot;build&quot;]
+EXPOSE 5000/tcp
+ENTRYPOINT [&quot;dotnet&quot;, &quot;run&quot;, &quot;--server.urls&quot;, &quot;http://*:5000&quot;]
+</code></pre>
+
+<p>In summary, it is an instruction file for Docker to build the container image. The file could be read as:</p>
+
+<ul>
+<li>Start with the official Microsoft .Net Core image.</li>
+<li>Copy the all the project into the folder app of the container.</li>
+<li>Move to this folder.</li>
+<li>Execute dotnet restore =&gt; Will load all the depnedencies of the project.</li>
+<li>Execute dotnet build =&gt; I think it is clear enough!</li>
+<li>The container will expose the port 5000 other TCP. Our application is listening on this port.</li>
+<li>When the container start, execute dotnet run &ndash;server.urls http://*:5000. In other words, run our application listening from any IP address on the port 5000.</li>
+</ul>
+
+<p>To build the container, simply:</p>
+
+<pre><code>cd to-your-project-folder
+docker build -t payrun
+</code></pre>
+
+<p><strong>What is happening here?</strong>
+First we are using the windows docker client that you have installed with Chocolatey in the <a href="/tutorials/post/docker-start/">previous article</a>.
+Then, as we have already setup the environment variables to connect with the docker daemon of our host, docker following the instructions of <code>dockerfile</code>, transfer the project files to the linux box and create a container named <code>payrun</code>.</p>
+
+<p>You can check the container images with:</p>
+
+<pre><code>docker images
+</code></pre>
+
+<p>Now you should have a container image - an imuutable artifact - that can be deploy anywhere on any host Windows or Linux.</p>
 
 <h3 id="deploy-the-container">Deploy the container</h3>
 
-<p>docker run -t -d &ndash;name payrun_1 -p 5000:5000 payrun</p>
+<p>Let&rsquo;s use our container. To manually start our container, simply:</p>
+
+<pre><code>docker run -t -d --name payrun_1 -p 5000:5000 payrun
+</code></pre>
+
+<p>Contol it is running:</p>
+
+<pre><code>docker ps
+</code></pre>
+
+<p>Check its logs:</p>
+
+<pre><code>docker logs payrun_1
+</code></pre>
 
 <h3 id="test-our-application">Test our application</h3>
 

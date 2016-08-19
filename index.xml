@@ -22,7 +22,7 @@
 
 &lt;p&gt;First start or setup a virtual machine that will act as our cluster. If necessary, refer to &lt;a href=&#34;https://remyn.github.io/tutorials/tutorials/post/docker-start/&#34;&gt;Docker start&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;In the following, we will use the virtual machine created  before named &lt;code&gt;docker-host&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In the following, we will use the virtual machine created before named &lt;code&gt;docker-host&lt;/code&gt;. And we assume, you have set up the environment variable to connect to the docker daemon of the virtual machine.&lt;/p&gt;
 
 &lt;h2 id=&#34;create-the-cluster&#34;&gt;Create the cluster&lt;/h2&gt;
 
@@ -127,18 +127,72 @@ private string GetIP()
 }
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;So now we have an application that is able to handle some HTTP Request and reply back adding the IP Address of the hsot into the header.
+&lt;p&gt;So now we have an application that is able to handle some HTTP Request and reply back adding the IP Address of the host into the header.
 We can debug it, run it on our windows computer.&lt;/p&gt;
 
 &lt;h3 id=&#34;create-the-container&#34;&gt;Create the container&lt;/h3&gt;
 
-&lt;p&gt;Put the docker file into the project folder
-Move to the project folder
-docker build -t payrun .&lt;/p&gt;
+&lt;p&gt;Here, we have an ASP.NET Core application. I mean it is a cross platform application that can be self hosted (using kestrel). It can be executed on Windows or Linux.
+We can create an container that we can deploy either on Windows or on Linux. It is a deployment choice not a compilation one.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;So let&amp;rsquo;s create the container.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;First, if it is not already the case, put a dockerfile - named dockerfile without extension - into the project folder, that looks like the following:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;FROM microsoft/dotnet:latest
+COPY . /app
+WORKDIR /app
+RUN [&amp;quot;dotnet&amp;quot;, &amp;quot;restore&amp;quot;]
+RUN [&amp;quot;dotnet&amp;quot;, &amp;quot;build&amp;quot;]
+EXPOSE 5000/tcp
+ENTRYPOINT [&amp;quot;dotnet&amp;quot;, &amp;quot;run&amp;quot;, &amp;quot;--server.urls&amp;quot;, &amp;quot;http://*:5000&amp;quot;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In summary, it is an instruction file for Docker to build the container image. The file could be read as:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Start with the official Microsoft .Net Core image.&lt;/li&gt;
+&lt;li&gt;Copy the all the project into the folder app of the container.&lt;/li&gt;
+&lt;li&gt;Move to this folder.&lt;/li&gt;
+&lt;li&gt;Execute dotnet restore =&amp;gt; Will load all the depnedencies of the project.&lt;/li&gt;
+&lt;li&gt;Execute dotnet build =&amp;gt; I think it is clear enough!&lt;/li&gt;
+&lt;li&gt;The container will expose the port 5000 other TCP. Our application is listening on this port.&lt;/li&gt;
+&lt;li&gt;When the container start, execute dotnet run &amp;ndash;server.urls http://*:5000. In other words, run our application listening from any IP address on the port 5000.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To build the container, simply:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;cd to-your-project-folder
+docker build -t payrun
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;What is happening here?&lt;/strong&gt;
+First we are using the windows docker client that you have installed with Chocolatey in the &lt;a href=&#34;https://remyn.github.io/tutorials/tutorials/post/docker-start/&#34;&gt;previous article&lt;/a&gt;.
+Then, as we have already setup the environment variables to connect with the docker daemon of our host, docker following the instructions of &lt;code&gt;dockerfile&lt;/code&gt;, transfer the project files to the linux box and create a container named &lt;code&gt;payrun&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;You can check the container images with:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker images
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now you should have a container image - an imuutable artifact - that can be deploy anywhere on any host Windows or Linux.&lt;/p&gt;
 
 &lt;h3 id=&#34;deploy-the-container&#34;&gt;Deploy the container&lt;/h3&gt;
 
-&lt;p&gt;docker run -t -d &amp;ndash;name payrun_1 -p 5000:5000 payrun&lt;/p&gt;
+&lt;p&gt;Let&amp;rsquo;s use our container. To manually start our container, simply:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker run -t -d --name payrun_1 -p 5000:5000 payrun
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Contol it is running:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker ps
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Check its logs:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker logs payrun_1
+&lt;/code&gt;&lt;/pre&gt;
 
 &lt;h3 id=&#34;test-our-application&#34;&gt;Test our application&lt;/h3&gt;
 
