@@ -1,0 +1,10 @@
+baseurl = "https://remyn.github.io/tutorials/"
+languageCode = "en-us"
+title = "One step at a time ..."
+Description = "Rome has not been build in one day."
+
+[Params]
+  Author = "remyn"
+  image = "MorphoGenesis.jpg"
+  logo = "remyn-hexa.png"
+
