@@ -184,6 +184,9 @@ Then, as we have already setup the environment variables to connect with the doc
 &lt;pre&gt;&lt;code&gt;docker run -t -d --name payrun_1 -p 5000:5000 payrun
 &lt;/code&gt;&lt;/pre&gt;
 
+&lt;p&gt;With the previous command line, we ask docker to start the container named payrun, give the instance name payrun_1, match the port 5000 of the host to the port 5000 of the container.
+And by the way, give back the control (with the -d) parameter.&lt;/p&gt;
+
 &lt;p&gt;Contol it is running:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code&gt;docker ps
@@ -196,24 +199,110 @@ Then, as we have already setup the environment variables to connect with the doc
 
 &lt;h3 id=&#34;test-our-application&#34;&gt;Test our application&lt;/h3&gt;
 
-&lt;p&gt;Direct call
-curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):5000/payruns&lt;/p&gt;
+&lt;p&gt;Our application should be reachable on the port 5000 inside the container.
+Let&amp;rsquo;s try a direct call to the application. We deployed the container by matching the port 5000 of the host to the same number inside the container. So a request to the host IP using the port 5000, should end up inside the container.&lt;/p&gt;
 
-&lt;p&gt;Check Traefik to see the new container registered
-So using dynamic routing
-curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -H &amp;ldquo;Host:payrun_1.docker.localhost&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):80/payruns&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl -X POST -i -H &amp;quot;Content-Type: application/json&amp;quot; -d &amp;quot;{ &#39;Name&#39;:&#39;Payrun name&#39;, &#39;Schedule&#39;: &#39;Schedule name&#39; }&amp;quot; http://$(echo $DOCKER_IP):5000/payruns 
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;em&gt;Voila!&lt;/em&gt;  You should see the answer with the header containing the IP address of the container.&lt;/p&gt;
+
+&lt;h3 id=&#34;checking-the-dynamicc-proxy&#34;&gt;Checking the dynamicc proxy&lt;/h3&gt;
+
+&lt;p&gt;According to what we said before, Traefik should have seen the new container, registered it automatically and be ready to transfer requests to it.&lt;/p&gt;
+
+&lt;p&gt;First check its registration, got to the Traefik web interface - port 8088 of your host. You should see under the docker tab, the service &lt;code&gt;payrun_1&lt;/code&gt; registered with a frontend rule named &lt;code&gt;Host:payrun_1.docker.localhost&lt;/code&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Note: as we didn&amp;rsquo;t specifically assigned a label to the container Traefik automatically give it one based on convention.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Let&amp;rsquo;s try it.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -X POST -i -H &amp;quot;Content-Type: application/json&amp;quot; -H &amp;quot;Host:payrun_1.docker.localhost&amp;quot; -d &amp;quot;{ &#39;Name&#39;:&#39;Payrun name&#39;, &#39;Schedule&#39;: &#39;Schedule name&#39; }&amp;quot; http://$(echo $DOCKER_IP):80/payruns
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;2 things to notice here:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;We are using the port 80, not the port 5000.&lt;/li&gt;
+&lt;li&gt;We are incorporating into the header the frontend rule.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Because we have Traefik listening on the port 80 of the cluster IP Address. We just need to send the request to the &lt;code&gt;cluster&lt;/code&gt;, mentioning into the header the &lt;code&gt;service&lt;/code&gt; that need to handle the request.
+Traefik will automatically redirect the request to the appropriate &lt;code&gt;container&lt;/code&gt;. We don&amp;rsquo;t need to know on which instance is the container,  what is the IP address of the container or even the port.&lt;/p&gt;
+
+&lt;p&gt;Sometimes there is awesome &lt;strong&gt;magic&lt;/strong&gt; tool!&lt;/p&gt;
 
 &lt;h2 id=&#34;scale-our-container&#34;&gt;Scale our container&lt;/h2&gt;
 
-&lt;p&gt;Deploy payrun marathon
-Manually or by script
-curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H &amp;ldquo;Content-type: application/json&amp;rdquo;&lt;/p&gt;
+&lt;p&gt;What about scaling up or down? Marathon will manage that for us.
+We can ask Marathon to ensure that 3 instances of our application is running at all times.
+Create a deployment file &lt;code&gt;marathon-payrun.json&lt;/code&gt;, declariung the cpu, ram usage and the container parameters, taht looks like:&lt;/p&gt;
 
-&lt;p&gt;curl -X POST -i -H &amp;ldquo;Content-Type: application/json&amp;rdquo; -H &amp;ldquo;Host:payrun.marathon&amp;rdquo; -d &amp;ldquo;{ &amp;lsquo;Name&amp;rsquo;:&amp;lsquo;Payrun name&amp;rsquo;, &amp;lsquo;Schedule&amp;rsquo;: &amp;lsquo;Schedule name&amp;rsquo; }&amp;rdquo; http://$(echo $DOCKER_IP):80/payruns&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;{
+    &amp;quot;id&amp;quot;: &amp;quot;marathon-payrun&amp;quot;,
+    &amp;quot;cpus&amp;quot;: 0.1,
+    &amp;quot;mem&amp;quot;: 64.0,
+    &amp;quot;instances&amp;quot;: 3,
+    &amp;quot;container&amp;quot;: {
+        &amp;quot;type&amp;quot;: &amp;quot;DOCKER&amp;quot;,
+        &amp;quot;docker&amp;quot;: {
+        &amp;quot;image&amp;quot;: &amp;quot;payrun&amp;quot;,
+        &amp;quot;network&amp;quot;: &amp;quot;BRIDGE&amp;quot;,
+        &amp;quot;portMappings&amp;quot;: [
+            { &amp;quot;containerPort&amp;quot;: 5000, &amp;quot;hostPort&amp;quot;: 0, &amp;quot;protocol&amp;quot;: &amp;quot;tcp&amp;quot; }
+        ]
+        }
+    },
+    &amp;quot;healthChecks&amp;quot;: [
+        {
+        &amp;quot;protocol&amp;quot;: &amp;quot;HTTP&amp;quot;,
+        &amp;quot;portIndex&amp;quot;: 0,
+        &amp;quot;path&amp;quot;: &amp;quot;/api/values&amp;quot;,
+        &amp;quot;gracePeriodSeconds&amp;quot;: 5,
+        &amp;quot;intervalSeconds&amp;quot;: 20,
+        &amp;quot;maxConsecutiveFailures&amp;quot;: 3
+        }
+    ],
+    &amp;quot;labels&amp;quot;: {
+        &amp;quot;traefik.weight&amp;quot;: &amp;quot;1&amp;quot;,
+        &amp;quot;traefik.protocol&amp;quot;: &amp;quot;http&amp;quot;,
+        &amp;quot;traefik.frontend.rule&amp;quot; : &amp;quot;Host:payrun.marathon&amp;quot;,
+        &amp;quot;traefik.frontend.priority&amp;quot; : &amp;quot;10&amp;quot;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Scale the application manually (could be done by script)&lt;/p&gt;
+&lt;p&gt;Now, create a deployment on marathon using this file:&lt;/p&gt;
 
-&lt;p&gt;docker stats&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;curl -X POST http://$(echo $DOCKER_IP):8080/v2/apps -d @marathon-payrun.json -H &amp;quot;Content-type: application/json&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The previous command use the API interface, but the same action could be done thru the web interface.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Go on the Marathon web interface (port 8000) and check the deployment and the instances.&lt;/li&gt;
+&lt;li&gt;Go on the Traefik web interface (port 8088), on the Marathon tab, check the new 3 instances are registered.&lt;/li&gt;
+&lt;li&gt;Go on the Mesos web interface (port 5050) and check the resources used (3 x 0.1 cpu and 3 x 64 MB).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Did you notice, the frontend rule label specified inside the marathon file : &lt;code&gt;traefik.frontend.rule&amp;quot; : &amp;quot;Host:payrun.marathon&lt;/code&gt;.
+So want to use this new &lt;code&gt;service&lt;/code&gt; deployed?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;curl -X POST -i -H &amp;quot;Content-Type: application/json&amp;quot; -H &amp;quot;Host:payrun.marathon&amp;quot; -d &amp;quot;{ &#39;Name&#39;:&#39;Payrun name&#39;, &#39;Schedule&#39;: &#39;Schedule name&#39; }&amp;quot; http://$(echo $DOCKER_IP):80/payruns
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;As previously, we are sending the request to the port 80 of the host.Traefik will do the job to know how to reach and load balance the service. Repeat the previous command several times and check the IP Address of the container to see that each instance is used alternatively.&lt;/p&gt;
+
+&lt;p&gt;Want more instance? Just scale the deployment from the Marathon interface or from its API. As long as Mesos reports enough resources, you will have what you want.&lt;/p&gt;
+
+&lt;p&gt;Finally, you check what your services are really consuming by checking the containers:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker stats 
+&lt;/code&gt;&lt;/pre&gt;
 </description>
         </item>
       
