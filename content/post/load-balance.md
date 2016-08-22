@@ -36,7 +36,7 @@ If you didn't get the [repository](https://github.com/remyn/tutorials-files), yo
 
     docker-compose -f compose-cluster.yml up -d
 
-The composition file instruct docker to setup the following:
+The composition file instructs docker to setup the following:
 
  * 1 x Zookeeper
  * 1 x Mesos server
