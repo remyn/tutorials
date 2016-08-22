@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>One step at a time ... </title>
+    <link>https://remyn.github.io/tutorials/tags/kafka/</link>
+    <language>en-us</language>
+    <author>remyn</author>
+    <rights>(C) 2016</rights>
+    <updated>2016-08-22 15:33:35 &#43;1200 NZST</updated>
+
+    
+      
+        <item>
+          <title>Starting with kafka</title>
+          <link>https://remyn.github.io/tutorials/post/kafka-start/</link>
+          <pubDate>Mon, 22 Aug 2016 15:33:35 NZST</pubDate>
+          <author>remyn</author>
+          <guid>https://remyn.github.io/tutorials/post/kafka-start/</guid>
+          <description>
+
+&lt;p&gt;A simple start with kafka, setting up a cluster with 3 nodes.&lt;/p&gt;
+
+&lt;p&gt;Kafka is a distributed messaging system, that decouples publication and consumption of the messages.
+Once a message is published, you can consume it and replay as many times as you want.
+You can read the &lt;a href=&#34;http://kafka.apache.org/documentation.html#quickstart&#34;&gt;quickstart&lt;/a&gt; of Kafka to apprehend the basic concept. It is very well explained.&lt;/p&gt;
+
+&lt;p&gt;We are going to set up a basic Kafka cluster ready to use, for &lt;code&gt;development&lt;/code&gt; perspective. We are going to use containers.
+In the context of development we don&amp;rsquo;t want to persist indefinitely the messages.
+It is why, in this configuration as soon the containers are stopped, the messages disappear.
+If for some reason, you don&amp;rsquo;t want this behavior, you should configure the kafka container against a specific volume to persist the messages behind the container lifecycle.&lt;/p&gt;
+
+&lt;h2 id=&#34;create-a-kafka-cluster&#34;&gt;Create a Kafka cluster&lt;/h2&gt;
+
+&lt;p&gt;First, if it is not the case, you can create a virtual machine to handle our Kafka cluster - named kafka-cluster (using docker-machine).
+Refer to &lt;a href=&#34;https://remyn.github.io/tutorials/tutorials/post/docker-start/&#34;&gt;Docker start&lt;/a&gt;, if necessary.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine start kafka-cluster
+docker-machine env kafka-cluster
+ (don&#39;t forget to execute the eval from the last line printed)
+export DOCKER_IP=$(docker-machine ip kafka-cluster)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The previous commands just ensure the virtual machine is running, and our docker client is connected to the docker daemon of the virtual machine.&lt;/p&gt;
+
+&lt;p&gt;Now, we just need to create the cluster with &lt;code&gt;docker-compose&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you didn&amp;rsquo;t get the &lt;a href=&#34;https://github.com/remyn/tutorials-files&#34;&gt;repository&lt;/a&gt;, you can download directly the composition file &lt;a href=&#34;https://github.com/remyn/tutorials-files/raw/master/compose-kafka.yml&#34;&gt;compose-kafka.yml&lt;/a&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-compose -f compose-kafka.yml up -d
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The composition file instructs docker to setup the following:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;1 x Zookeeper&lt;/li&gt;
+&lt;li&gt;1 x Kafka node&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;You can check the logs and containers.
+So by now we have Kafka operational.&lt;/p&gt;
+
+&lt;h3 id=&#34;scale-to-3-nodes&#34;&gt;Scale to 3 nodes&lt;/h3&gt;
+
+&lt;p&gt;But if we want to test replication of messages we will need more nodes.&lt;/p&gt;
+
+&lt;p&gt;If we want 3 nodes in total, just ask docker to scale the kafka container:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-compose -f compose-kafka.yml scale kafka=3
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;By now, you have 3 nodes, that could replicate messages between them, simulating a realistic production environment.&lt;/p&gt;
+
+&lt;p&gt;So, you can experiment some messaging using some client library like &lt;a href=&#34;https://github.com/ah-/rdkafka-dotnet&#34;&gt;rdkafka-dotnet&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;create-a-kafka-shell&#34;&gt;Create a Kafka shell&lt;/h2&gt;
+
+&lt;p&gt;If you want to check that everything as been setup properly. We can use the default command line tools that is coming with Kafka.&lt;/p&gt;
+
+&lt;p&gt;To simplify the passage of parameters to the command line, the Kafka container already define easy to use variables and scripts.
+It is why to use the command line we are going to start another kafka container.
+If you didn&amp;rsquo;t get the &lt;a href=&#34;https://github.com/remyn/tutorials-files&#34;&gt;repository&lt;/a&gt;, you can download directly the script file &lt;a href=&#34;https://github.com/remyn/tutorials-files/raw/master/start-kafka-shell.sh&#34;&gt;start-kafka-shell&lt;/a&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;docker-machine ssh kafka-cluster
+export HOST_IP=$(ifconfig eth0 | awk &#39;/inet addr/{split($2,a,&amp;quot;:&amp;quot;); print a[2]}&#39;)
+start-kafka-shell.sh $HOST_IP SHOST_IP:2181
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The second command is just to retreive the IP Address of the Host, to be able to pass it to the Kafka container used for the shell.
+The last command just start another kafka container, and open an SSH connection inside it. All the variables will be set up.&lt;/p&gt;
+
+&lt;h2 id=&#34;create-a-topic&#34;&gt;Create a topic&lt;/h2&gt;
+
+&lt;p&gt;First we need to create a Topic that will persist the messages.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$KAFKA_HOME/bin/kafka-topics.sh --create --topic atopic --partition 4 --zookeeper $ZK --replication-factor 1
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Check the topic exists:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$KAFKA_HOME/bin/kafka-topics.sh --list --zookeeper $ZK
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Get the details of the topic:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$KAFKA_HOME/bin/kafka-topics.sh --describe --topic atopic --zookeeper $ZK
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Note: &lt;strong&gt;$ZK&lt;/strong&gt; is a variable pointing to Zookeeper that has been set up properly.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&#34;produce-some-messages&#34;&gt;Produce some messages&lt;/h2&gt;
+
+&lt;p&gt;So, now push some message into the topic:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$KAFKA_HOME/bin/kafka-console-producer.sh --topic atopic --broker-list= $(broker-list.sh)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Note: &lt;strong&gt;broker-list.sh&lt;/strong&gt; is a script that retreive automatically the IP address and port of the nodes available.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Every line that you enter is pushed as a message into the topic.&lt;/p&gt;
+
+&lt;h2 id=&#34;consume-messages&#34;&gt;Consume messages&lt;/h2&gt;
+
+&lt;p&gt;If you want to see the message consumed in the same time, you can open another console, with the following command:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;$KAFKA_HOME/bin/kafka-console-consumer.sh --topic atopic --zookeeper=$ZK --from-beginning
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Notice: &lt;strong&gt;from-begining&lt;/strong&gt; asks Kafka to replay the messages from the start of the topic when you start consuming the messages.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+        </item>
+      
+    
+
+  </channel>
+</rss>
